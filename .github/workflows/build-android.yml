@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches:
-      - claude/hobbyhub-github-setup-re5vwt
+      - main
     paths:
       - 'src/**'
       - 'android/**'
