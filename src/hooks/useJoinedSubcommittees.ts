@@ -50,6 +50,12 @@ export function useJoinedSubcommittees(currentUserId: string | undefined) {
   const [isLoading, setIsLoading] = useState(true);
   const [syncDone, setSyncDone] = useState(false);
   const syncInProgress = useRef(false);
+  // This hook is used concurrently in multiple places on the same page
+  // (e.g. Community.tsx and its FeedTab child both call it). Supabase
+  // treats channel() calls with the same name as the same channel, and
+  // throws if you try to attach a listener to one that's already
+  // subscribed -- so each hook instance needs its own channel name.
+  const channelIdRef = useRef(Math.random().toString(36).slice(2));
 
   /* ─── Load from Supabase + sync localStorage up + auto-join defaults ─── */
   useEffect(() => {
@@ -184,7 +190,7 @@ export function useJoinedSubcommittees(currentUserId: string | undefined) {
     if (!currentUserId || !hasRealConfig || !supabase) return;
 
     const channel = supabase!
-      .channel('subcommittee_joins_changes')
+      .channel(`subcommittee_joins_changes_${channelIdRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'subcommittee_joins', filter: `user_id=eq.${currentUserId}` },

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   fetchFriendRequests,
@@ -31,6 +31,9 @@ export interface Friend {
 /* ─── Hook ─── */
 export function useFriends(currentUserId?: string) {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
+  // Unique per hook instance so concurrent mounts on the same page never
+  // collide on Supabase's channel name (see useJoinedSubcommittees).
+  const channelIdRef = useRef(Math.random().toString(36).slice(2));
 
   /* Load from Supabase */
   const loadRequests = useCallback(async () => {
@@ -51,7 +54,7 @@ export function useFriends(currentUserId?: string) {
     if (!currentUserId || !supabase) return;
 
     const channel = supabase!
-      .channel('friend_requests_changes')
+      .channel(`friend_requests_changes_${channelIdRef.current}`)
       .on(
         'postgres_changes',
         {
