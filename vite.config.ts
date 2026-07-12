@@ -29,7 +29,26 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Do not precache index.html -- it must always be fetched fresh so
+        // navigations pick up the current build's JS/CSS chunk hashes.
+        // Precaching it (the default for generateSW) means every visit
+        // replays whatever index.html existed when the service worker was
+        // first installed, silently hiding every subsequent deploy.
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
+        navigateFallback: null,
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-shell',
+              networkTimeoutSeconds: 5,
+            },
+          },
+        ],
       },
     }),
   ],
