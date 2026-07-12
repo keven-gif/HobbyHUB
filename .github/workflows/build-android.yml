@@ -1,0 +1,79 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - claude/hobbyhub-github-setup-re5vwt
+    paths:
+      - 'src/**'
+      - 'android/**'
+      - 'public/**'
+      - 'resources/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+      - 'vite.config.ts'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://rfwqlnbvojzqzhiagxhl.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_lx3WOSNbEzH867xgIYXSsw_Xph6lbJJ
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk hobbyhub-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hobbyhub-debug-apk
+          path: hobbyhub-debug.apk
+
+      - name: Publish rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: HobbyHub Android (latest)
+          body: |
+            Auto-built debug APK from the latest push to `${{ github.ref_name }}`.
+            Download `hobbyhub-debug.apk` on your phone and open it to install
+            (you'll need to allow "install unknown apps" for your browser once).
+          files: hobbyhub-debug.apk
+          prerelease: true
