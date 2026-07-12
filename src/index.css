@@ -1,0 +1,195 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base Colors */
+    --bg-base: #0f1115;
+    --bg-surface: #181a21;
+    --bg-surface-hover: #1f2230;
+    --bg-input: #111318;
+
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: #8b8f9a;
+    --text-muted: #4a4f5c;
+
+    /* Accent Colors */
+    --accent-primary: #d93a3a;
+    --accent-primary-hover: #e85555;
+    --accent-secondary: #4a80ff;
+    --accent-tertiary: #f0c040;
+
+    /* Community Category Colors */
+    --color-cars: #d93a3a;
+    --color-gundam: #3a8cff;
+    --color-tcg: #8b5cf6;
+    --color-videogames: #39ff14;
+    --color-rc: #ff7b00;
+    --color-photography: #14b8a6;
+    --color-watches: #d4a017;
+    --color-audio: #b0b8c8;
+
+    /* Border & Divider */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-active: rgba(255, 255, 255, 0.15);
+
+    /* Easing */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-power: cubic-bezier(0.87, 0, 0.13, 1);
+    --ease-in-out-smooth: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+
+    /* Spacing */
+    --page-padding: 24px;
+    --section-gap: 100px;
+    --card-gap: 16px;
+
+    /* Typography Scale */
+    --text-hero: clamp(56px, 8vw, 96px);
+    --text-section: clamp(36px, 4vw, 48px);
+    --text-card: clamp(20px, 2.5vw, 28px);
+    --text-body-lg: 18px;
+    --text-body: 16px;
+    --text-ui: 14px;
+    --text-caption: 12px;
+
+    /* Shadcn compat */
+    --background: 220 14% 7%;
+    --foreground: 0 0% 100%;
+    --card: 222 16% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 222 16% 11%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 68% 54%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 16% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 222 16% 15%;
+    --muted-foreground: 225 6% 57%;
+    --accent: 222 16% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 14% 20%;
+    --input: 220 14% 10%;
+    --ring: 220 100% 64%;
+    --radius: 4px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-base);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2d38;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3d48;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(217, 58, 58, 0.3);
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Bebas Neue', sans-serif;
+  }
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* RGB Glitch Keyframes */
+@keyframes glitch-anim-1 {
+  0% {
+    clip-path: inset(20% 0 80% 0);
+    transform: translate(-2px, 1px);
+  }
+  20% {
+    clip-path: inset(60% 0 10% 0);
+    transform: translate(2px, -1px);
+  }
+  40% {
+    clip-path: inset(40% 0 50% 0);
+    transform: translate(-2px, 2px);
+  }
+  60% {
+    clip-path: inset(80% 0 5% 0);
+    transform: translate(1px, -2px);
+  }
+  80%, 100% {
+    clip-path: inset(10% 0 70% 0);
+    transform: translate(-1px, 1px);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0% {
+    clip-path: inset(10% 0 60% 0);
+    transform: translate(2px, -1px);
+  }
+  20% {
+    clip-path: inset(30% 0 20% 0);
+    transform: translate(-2px, 1px);
+  }
+  40% {
+    clip-path: inset(70% 0 10% 0);
+    transform: translate(1px, 2px);
+  }
+  60% {
+    clip-path: inset(20% 0 50% 0);
+    transform: translate(-1px, -2px);
+  }
+  80%, 100% {
+    clip-path: inset(50% 0 30% 0);
+    transform: translate(2px, 1px);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
