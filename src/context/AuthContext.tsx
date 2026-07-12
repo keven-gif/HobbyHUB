@@ -24,7 +24,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   signup: (userData: Omit<User, 'id' | 'avatar' | 'usernameLastChanged'> & { password?: string }) => Promise<{ success: boolean; error?: string }>;
-  resetPassword: (email: string, newPassword: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   canChangeUsername: () => boolean;
@@ -273,10 +273,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  /* ── Reset password ── */
-  const resetPassword = useCallback(async (_email: string, newPassword: string) => {
-    if (!supabase) return;
-    await supabase.auth.updateUser({ password: newPassword });
+  /* ── Request a password reset email ── */
+  const resetPassword = useCallback(async (email: string) => {
+    if (!supabase) return { success: false, error: 'Supabase not configured.' };
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const redirectTo = `${window.location.origin}${window.location.pathname}#/reset-password`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, { redirectTo });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
   }, []);
 
   /* ── Logout ── */

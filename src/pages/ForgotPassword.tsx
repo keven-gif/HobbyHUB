@@ -4,12 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Mail, ArrowLeft, CheckCircle, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -24,19 +22,18 @@ export const ForgotPassword: React.FC = () => {
       setError('Please enter a valid email address.');
       return;
     }
-    if (!newPassword || newPassword.length < 6) {
-      setError('New password must be at least 6 characters.');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
-      await resetPassword(email, newPassword);
-      setSuccess(true);
-      setEmail('');
-      setNewPassword('');
+      const result = await resetPassword(email);
+      if (result.success) {
+        setSuccess(true);
+        setEmail('');
+      } else {
+        setError(result.error || 'Unable to send reset email. Please try again.');
+      }
     } catch (err: any) {
-      setError(err?.message || 'Unable to reset password. Please try again.');
+      setError(err?.message || 'Unable to send reset email. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,7 +64,7 @@ export const ForgotPassword: React.FC = () => {
           <div className="p-6 space-y-1 text-center">
             <h2 className="text-xl font-bold tracking-tight">Reset Password</h2>
             <p className="text-sm text-muted-foreground">
-              Enter your email and a new password below.
+              Enter your account email and we'll send you a link to set a new password.
             </p>
           </div>
 
@@ -76,13 +73,13 @@ export const ForgotPassword: React.FC = () => {
               <div className="flex flex-col items-center gap-3 py-4">
                 <CheckCircle className="h-12 w-12 text-green-500" />
                 <p className="text-sm text-center text-muted-foreground">
-                  Your password has been reset successfully!
+                  If an account exists for that email, we've sent a link to reset your password. Check your inbox.
                 </p>
                 <Link
                   to="/login"
                   className="text-sm text-primary hover:underline underline-offset-4 mt-2"
                 >
-                  Sign In with New Password
+                  Back to Sign In
                 </Link>
               </div>
             ) : (
@@ -110,32 +107,8 @@ export const ForgotPassword: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="newPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="At least 6 characters"
-                      className="pl-9 pr-10"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      disabled={isSubmitting}
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Resetting...' : 'Reset Password'}
+                  {isSubmitting ? 'Sending...' : 'Send Reset Link'}
                 </Button>
 
                 <div className="text-center">
