@@ -723,7 +723,7 @@ export default function Community() {
       </section>
 
       {/* Tabs - CSS sticky */}
-      <div className="sticky top-[72px] z-30 px-6" style={{ backgroundColor: 'var(--bg-base)', borderBottom: '1px solid var(--border-subtle)' }}>
+      <div className="sticky z-30 px-6" style={{ top: 'calc(72px + env(safe-area-inset-top, 0px))', backgroundColor: 'var(--bg-base)', borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="max-w-7xl mx-auto flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;

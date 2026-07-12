@@ -26,7 +26,7 @@ export default function Layout() {
   return (
     <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: 'var(--bg-base)' }}>
       <Navbar />
-      <main className="flex-1 pt-[72px] pb-14 sm:pb-0">
+      <main className="flex-1 pb-14 sm:pb-0" style={{ paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))' }}>
         <Outlet />
       </main>
       <Footer />
