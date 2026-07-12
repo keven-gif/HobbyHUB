@@ -11,9 +11,24 @@ import { runMigration } from './lib/migrate';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import { Toaster } from './components/ui/sonner';
+
+/* Vite emits this when a lazy-loaded chunk 404s -- typically because the
+   service worker or browser is holding an index.html from a previous
+   deploy that references JS chunks which no longer exist on the server.
+   A one-time reload picks up the current deployment. */
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', () => {
+    const key = 'hobbyhub_reloaded_after_preload_error';
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+      window.location.reload();
+    }
+  });
+}
 
 /* ─── Lazy load all non-critical pages ─── */
 const Login            = lazy(() => import('./pages/Login'));
@@ -46,51 +61,53 @@ runMigration();
 
 function App() {
   return (
-    <SupabaseSyncProvider>
-      <AuthProvider>
-        <CommunityProvider>
-          <PostProvider>
-            <NotificationProvider>
-              <MessageProvider>
-                <Router>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/login" element={<Suspense fallback={<InlineLoader />}><Login /></Suspense>} />
-                  <Route path="/signup" element={<Suspense fallback={<InlineLoader />}><Signup /></Suspense>} />
-                  <Route path="/forgot-password" element={<Suspense fallback={<InlineLoader />}><ForgotPassword /></Suspense>} />
-                  <Route path="/reset-password" element={<Suspense fallback={<InlineLoader />}><ResetPassword /></Suspense>} />
-                  <Route path="/admin" element={<AdminRoute><Suspense fallback={<InlineLoader />}><Admin /></Suspense></AdminRoute>} />
+    <ErrorBoundary>
+      <SupabaseSyncProvider>
+        <AuthProvider>
+          <CommunityProvider>
+            <PostProvider>
+              <NotificationProvider>
+                <MessageProvider>
+                  <Router>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={<Suspense fallback={<InlineLoader />}><Login /></Suspense>} />
+                    <Route path="/signup" element={<Suspense fallback={<InlineLoader />}><Signup /></Suspense>} />
+                    <Route path="/forgot-password" element={<Suspense fallback={<InlineLoader />}><ForgotPassword /></Suspense>} />
+                    <Route path="/reset-password" element={<Suspense fallback={<InlineLoader />}><ResetPassword /></Suspense>} />
+                    <Route path="/admin" element={<AdminRoute><Suspense fallback={<InlineLoader />}><Admin /></Suspense></AdminRoute>} />
 
-                  {/* Protected Application Routes Layout */}
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <Layout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Home />} />
-                    <Route path="explore" element={<Explore />} />
-                    <Route path="community/:id" element={<Suspense fallback={<InlineLoader />}><Community /></Suspense>} />
-                    <Route path="create-post" element={<Suspense fallback={<InlineLoader />}><CreatePost /></Suspense>} />
-                    <Route path="notifications" element={<Suspense fallback={<InlineLoader />}><Notifications /></Suspense>} />
-                    <Route path="messages" element={<Suspense fallback={<InlineLoader />}><Messages /></Suspense>} />
-                    <Route path="chat/:id" element={<Suspense fallback={<InlineLoader />}><Chat /></Suspense>} />
-                    <Route path="profile" element={<Suspense fallback={<InlineLoader />}><Profile /></Suspense>} />
-                    <Route path="privacy" element={<Suspense fallback={<InlineLoader />}><PrivacyPolicy /></Suspense>} />
-                    <Route path="terms" element={<Suspense fallback={<InlineLoader />}><TermsOfService /></Suspense>} />
-                    <Route path="support" element={<Suspense fallback={<InlineLoader />}><Support /></Suspense>} />
-                  </Route>
-                </Routes>
-              </Router>
-              <Toaster />
-            </MessageProvider>
-          </NotificationProvider>
-        </PostProvider>
-        </CommunityProvider>
-      </AuthProvider>
-    </SupabaseSyncProvider>
+                    {/* Protected Application Routes Layout */}
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <Layout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<Home />} />
+                      <Route path="explore" element={<Explore />} />
+                      <Route path="community/:id" element={<Suspense fallback={<InlineLoader />}><Community /></Suspense>} />
+                      <Route path="create-post" element={<Suspense fallback={<InlineLoader />}><CreatePost /></Suspense>} />
+                      <Route path="notifications" element={<Suspense fallback={<InlineLoader />}><Notifications /></Suspense>} />
+                      <Route path="messages" element={<Suspense fallback={<InlineLoader />}><Messages /></Suspense>} />
+                      <Route path="chat/:id" element={<Suspense fallback={<InlineLoader />}><Chat /></Suspense>} />
+                      <Route path="profile" element={<Suspense fallback={<InlineLoader />}><Profile /></Suspense>} />
+                      <Route path="privacy" element={<Suspense fallback={<InlineLoader />}><PrivacyPolicy /></Suspense>} />
+                      <Route path="terms" element={<Suspense fallback={<InlineLoader />}><TermsOfService /></Suspense>} />
+                      <Route path="support" element={<Suspense fallback={<InlineLoader />}><Support /></Suspense>} />
+                    </Route>
+                  </Routes>
+                </Router>
+                <Toaster />
+              </MessageProvider>
+            </NotificationProvider>
+          </PostProvider>
+          </CommunityProvider>
+        </AuthProvider>
+      </SupabaseSyncProvider>
+    </ErrorBoundary>
   );
 }
 
