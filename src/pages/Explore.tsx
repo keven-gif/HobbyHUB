@@ -280,9 +280,9 @@ export default function Explore() {
                   className="flex items-center gap-3 p-3 rounded-lg"
                   style={{ backgroundColor: '#111', border: '1px solid #222' }}
                 >
-                  <img src={c.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
                   <div>
-                    <span className="font-body text-sm font-medium block" style={{ color: '#fff' }}>{c.name}</span>
+                    <span className="font-display text-base tracking-wide block" style={{ color: '#fff' }}>{c.name}</span>
                     <span className="font-body text-[11px]" style={{ color: '#666' }}>{c.subs.slice(0, 3).join(' · ')}</span>
                   </div>
                 </Link>
@@ -500,14 +500,10 @@ export default function Explore() {
               className="flex gap-3 p-3 rounded-lg transition-colors"
               style={{ backgroundColor: '#111', border: '1px solid #222' }}
             >
-              <img
-                src={c.image}
-                alt={c.name}
-                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-              />
+              <div className="w-1 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-body text-sm font-semibold" style={{ color: '#fff' }}>{c.name}</span>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-display text-xl tracking-wide" style={{ color: '#fff' }}>{c.name}</span>
                   <span className="font-body text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${c.color}22`, color: c.color }}>
                     {c.category}
                   </span>

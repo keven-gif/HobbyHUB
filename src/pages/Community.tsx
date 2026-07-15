@@ -1135,22 +1135,21 @@ export default function Community() {
 
   return (
     <div style={{ backgroundColor: 'var(--bg-base)' }}>
-      {/* Hero Banner - static, no animation */}
-      <section className="relative w-full overflow-hidden" style={{ height: 'clamp(200px, 30vh, 360px)' }}>
-        <img src={community.coverImage || community.cover} alt={community.name} className="absolute inset-0 w-full h-full object-cover" loading="eager" />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(15,17,21,0.3) 0%, rgba(15,17,21,0.95) 100%)' }} />
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end gap-4">
-              <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentColor + '30', border: `2px solid ${accentColor}50` }}>
-                <Users size={28} style={{ color: accentColor }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="font-display text-2xl tracking-wider" style={{ color: '#ffffff' }}>{community.name}</h1>
-                <p className="font-body text-xs mt-1 line-clamp-2" style={{ color: '#aaaaaa' }}>{community.description}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="font-body text-[11px]" style={{ color: '#888' }}><Users size={12} className="inline mr-1" />{totalMembers} members</span>
-                </div>
+      {/* Hero — colored gradient tint instead of a cover photo */}
+      <section
+        className="relative w-full overflow-hidden px-6 pt-10 pb-8"
+        style={{ background: `linear-gradient(135deg, ${accentColor}2a 0%, var(--bg-base) 65%)` }}
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentColor + '20', border: `2px solid ${accentColor}50` }}>
+              <Users size={30} style={{ color: accentColor }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display text-3xl sm:text-4xl tracking-wide" style={{ color: 'var(--text-primary)' }}>{community.name}</h1>
+              <p className="font-body text-sm mt-1.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{community.description}</p>
+              <div className="flex items-center gap-3 mt-2.5">
+                <span className="font-body text-xs" style={{ color: 'var(--text-muted)' }}><Users size={13} className="inline mr-1" />{totalMembers} members</span>
               </div>
             </div>
           </div>
@@ -1166,13 +1165,11 @@ export default function Community() {
               const joined = isSubJoined(sub.id);
               return (
                 <div key={sub.id} className="flex-shrink-0 w-40 rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-surface)', border: joined ? `1px solid ${accentColor}` : '1px solid var(--border-subtle)' }}>
-                  <div className="overflow-hidden" style={{ height: '80px' }}>
-                    <img src={sub.image || community.cover} alt={sub.name} className="w-full h-full object-cover" loading="lazy" />
-                  </div>
-                  <div className="p-2">
-                    <p className="font-body text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{sub.name}</p>
-                    <p className="font-body text-[10px] line-clamp-1" style={{ color: 'var(--text-muted)' }}>{sub.description}</p>
-                    <div className="flex items-center justify-between mt-1.5">
+                  <div className="h-1.5" style={{ backgroundColor: accentColor }} />
+                  <div className="p-3">
+                    <p className="font-display text-base tracking-wide truncate mb-1" style={{ color: 'var(--text-primary)' }}>{sub.name}</p>
+                    <p className="font-body text-[10px] line-clamp-2 mb-2" style={{ color: 'var(--text-muted)' }}>{sub.description}</p>
+                    <div className="flex items-center justify-between">
                       <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>{getMemberCount(sub.id)}</span>
                       {user && (
                         <button onClick={() => joined ? leaveSub(sub.id) : joinSub(sub.id, communityId)}
