@@ -3,8 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Flame, MessageCircle, Bookmark, Share2, Calendar,
   Users, FileText, Info, Wrench, Check, Circle, Flag,
-  Send, Trash2, BookOpen, Search, Plus,
+  Send, Trash2, BookOpen, Search, Plus, HelpCircle, X,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   getCommunity, getPosts, getBuilds, getRules,
   getSubcommittees, type Post as MockPost, type Build,
@@ -14,7 +15,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useJoinedSubcommittees } from '@/hooks/useJoinedSubcommittees';
 import { useSubcommitteeMemberCounts } from '@/hooks/useSubcommitteeMemberCounts';
 import { getCommunityMembersAsync, getCommunitySubIds, type CommunityMember } from '@/lib/membershipRegistry';
-import { fetchEvents, createEvent, deleteEvent, fetchWikiArticles } from '@/lib/supabaseQueries';
+import {
+  fetchEvents, createEvent, deleteEvent, fetchWikiArticles,
+  fetchQuestions, fetchMentors, becomeMentor, removeMentor,
+} from '@/lib/supabaseQueries';
 import { toast } from 'sonner';
 import Avatar from '@/components/Avatar';
 
@@ -626,6 +630,256 @@ function GuidesTab({ communityId, accentColor }: { communityId: string; accentCo
 }
 
 /* ════════════════════════════════════════════════════
+   TAB: MENTORS & Q&A
+   ════════════════════════════════════════════════════ */
+function MentorQnATab({ communityId, accentColor }: { communityId: string; accentColor: string }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const subs = useMemo(() => getSubcommittees(communityId), [communityId]);
+
+  const [mentors, setMentors] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [unansweredOnly, setUnansweredOnly] = useState(false);
+  const [showMentorForm, setShowMentorForm] = useState(false);
+  const [mentorSubId, setMentorSubId] = useState('');
+  const [mentorBio, setMentorBio] = useState('');
+  const [isSavingMentor, setIsSavingMentor] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    Promise.all([fetchMentors(communityId), fetchQuestions(communityId)])
+      .then(([m, q]) => { setMentors(m); setQuestions(q); })
+      .catch(() => toast.error('Failed to load mentors & questions'))
+      .finally(() => setLoading(false));
+  }, [communityId]);
+
+  useEffect(load, [load]);
+
+  const myMentorEntry = useMemo(
+    () => (user ? mentors.find((m) => m.user_id === user.id) : undefined),
+    [mentors, user]
+  );
+
+  const handleBecomeMentor = async () => {
+    if (!user || !mentorSubId) return;
+    setIsSavingMentor(true);
+    try {
+      await becomeMentor({
+        user_id: user.id,
+        user_name: user.name || user.username,
+        user_avatar: user.avatar,
+        community_id: communityId,
+        subcommittee_id: mentorSubId,
+        bio: mentorBio.trim() || undefined,
+      });
+      toast.success("You're now listed as a mentor!");
+      setShowMentorForm(false);
+      setMentorBio('');
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to register as mentor');
+    } finally {
+      setIsSavingMentor(false);
+    }
+  };
+
+  const handleRemoveMentor = async () => {
+    if (!user || !myMentorEntry) return;
+    try {
+      await removeMentor(user.id, myMentorEntry.subcommittee_id);
+      toast.success('Removed from mentors');
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to remove mentor listing');
+    }
+  };
+
+  const filteredQuestions = useMemo(() => {
+    let result = questions;
+    if (unansweredOnly) result = result.filter((q) => !q.is_resolved);
+    const qStr = search.trim().toLowerCase();
+    if (qStr) {
+      result = result.filter((q) => q.title.toLowerCase().includes(qStr) || q.body.toLowerCase().includes(qStr));
+    }
+    return result;
+  }, [questions, unansweredOnly, search]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: accentColor, borderTopColor: 'transparent' }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Mentors */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-body text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+            Mentors
+          </h2>
+          {user && !myMentorEntry && (
+            <button
+              onClick={() => setShowMentorForm((v) => !v)}
+              className="font-body text-[11px] font-medium"
+              style={{ color: accentColor }}
+            >
+              {showMentorForm ? 'Cancel' : 'Become a Mentor'}
+            </button>
+          )}
+          {user && myMentorEntry && (
+            <button onClick={handleRemoveMentor} className="font-body text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              Remove my listing
+            </button>
+          )}
+        </div>
+
+        {showMentorForm && (
+          <div className="p-3 rounded-lg mb-3 space-y-2" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+            <select
+              value={mentorSubId}
+              onChange={(e) => setMentorSubId(e.target.value)}
+              className="w-full font-body text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ backgroundColor: '#1a1a1a', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
+            >
+              <option value="">Which subcommittee can you help with?</option>
+              {subs.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={mentorBio}
+              onChange={(e) => setMentorBio(e.target.value)}
+              placeholder="What can you help with? (optional)"
+              className="w-full font-body text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ backgroundColor: '#1a1a1a', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
+            />
+            <Button
+              onClick={handleBecomeMentor}
+              disabled={!mentorSubId || isSavingMentor}
+              className="w-full"
+              style={{ backgroundColor: accentColor }}
+            >
+              {isSavingMentor ? 'Saving...' : 'Confirm'}
+            </Button>
+          </div>
+        )}
+
+        {mentors.length === 0 ? (
+          <p className="font-body text-xs" style={{ color: 'var(--text-muted)' }}>No mentors yet in this community.</p>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {mentors.map((m) => {
+              const subName = subs.find((s) => s.id === m.subcommittee_id)?.name;
+              return (
+                <div
+                  key={m.id}
+                  className="flex-shrink-0 w-40 p-2.5 rounded-lg"
+                  style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Avatar src={m.user_avatar} name={m.user_name} size={26} />
+                    <div className="min-w-0">
+                      <p className="font-body text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{m.user_name}</p>
+                      {subName && <p className="font-body text-[9px] truncate" style={{ color: accentColor }}>{subName}</p>}
+                    </div>
+                  </div>
+                  {m.bio && <p className="font-body text-[10px] line-clamp-2" style={{ color: 'var(--text-muted)' }}>{m.bio}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Questions */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+            <Search size={14} style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search questions..."
+              className="flex-1 bg-transparent outline-none font-body text-sm"
+              style={{ color: 'var(--text-primary)' }}
+            />
+          </div>
+          {user && (
+            <button
+              onClick={() => navigate(`/community/${communityId}/questions/new`)}
+              className="flex items-center gap-1.5 font-body text-xs font-medium px-3 py-2 rounded-lg flex-shrink-0"
+              style={{ backgroundColor: accentColor, color: '#fff' }}
+            >
+              <Plus size={14} /> Ask
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={() => setUnansweredOnly((v) => !v)}
+          className="flex items-center gap-1.5 font-body text-[11px] px-3 py-1.5 rounded-full mb-3"
+          style={{
+            backgroundColor: unansweredOnly ? `${accentColor}22` : 'var(--bg-surface)',
+            color: unansweredOnly ? accentColor : 'var(--text-muted)',
+            border: `1px solid ${unansweredOnly ? accentColor : 'var(--border-subtle)'}`,
+          }}
+        >
+          {unansweredOnly ? <X size={12} /> : <HelpCircle size={12} />} Unanswered only
+        </button>
+
+        {filteredQuestions.length === 0 ? (
+          <EmptyTab icon={HelpCircle} text={search || unansweredOnly ? 'No questions match.' : 'No questions yet. Ask the first one.'} />
+        ) : (
+          <div className="flex flex-col gap-2">
+            {filteredQuestions.map((q) => {
+              const answerCount = (q.answers || []).length;
+              const subName = subs.find((s) => s.id === q.subcommittee_id)?.name;
+              return (
+                <Link
+                  key={q.id}
+                  to={`/community/${communityId}/questions/${q.id}`}
+                  className="p-3 rounded-lg"
+                  style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+                >
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span
+                      className="font-body text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                      style={{
+                        backgroundColor: q.is_resolved ? '#39ff1422' : `${accentColor}22`,
+                        color: q.is_resolved ? '#39ff14' : accentColor,
+                      }}
+                    >
+                      {q.is_resolved ? 'Resolved' : 'Unanswered'}
+                    </span>
+                    {subName && (
+                      <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>{subName}</span>
+                    )}
+                  </div>
+                  <p className="font-body text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{q.title}</p>
+                  <div className="flex items-center gap-1.5">
+                    <MessageCircle size={11} style={{ color: 'var(--text-muted)' }} />
+                    <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                      {answerCount} {answerCount === 1 ? 'answer' : 'answers'} · by {q.author_name}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════
    TAB: MEMBERS
    ════════════════════════════════════════════════════ */
 function MembersTab({ communityId, subIds }: { communityId: string; subIds: string[] }) {
@@ -732,7 +986,7 @@ function EmptyTab({ icon: Icon, text }: { icon: any; text: string }) {
 /* ════════════════════════════════════════════════════
    MAIN COMMUNITY PAGE
    ════════════════════════════════════════════════════ */
-type TabKey = 'feed' | 'guides' | 'builds' | 'events' | 'members' | 'about';
+type TabKey = 'feed' | 'guides' | 'builds' | 'events' | 'qna' | 'members' | 'about';
 
 export default function Community() {
   const { id } = useParams<{ id: string }>();
@@ -766,6 +1020,7 @@ export default function Community() {
     { key: 'guides', label: 'Guides', icon: BookOpen },
     { key: 'builds', label: 'Builds', icon: Wrench },
     { key: 'events', label: 'Events', icon: Calendar },
+    { key: 'qna', label: 'Q&A', icon: HelpCircle },
     { key: 'members', label: 'Members', icon: Users },
     { key: 'about', label: 'About', icon: Info },
   ];
@@ -850,6 +1105,7 @@ export default function Community() {
           {activeTab === 'guides' && <GuidesTab communityId={communityId} accentColor={accentColor} />}
           {activeTab === 'builds' && <BuildsTab communityId={communityId} />}
           {activeTab === 'events' && <EventsTab communityId={communityId} />}
+          {activeTab === 'qna' && <MentorQnATab communityId={communityId} accentColor={accentColor} />}
           {activeTab === 'members' && <MembersTab communityId={communityId} subIds={subIds} />}
           {activeTab === 'about' && <AboutTab communityId={communityId} accentColor={accentColor} />}
         </div>

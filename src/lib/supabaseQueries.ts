@@ -302,3 +302,88 @@ export async function deleteWikiArticle(articleId: string) {
   const { error } = await supabase!.from('wiki_articles').delete().eq('id', articleId);
   if (error) throw error;
 }
+
+/* ─── Q&A QUESTIONS ─── */
+export async function fetchQuestions(communityId: string) {
+  const { data, error } = await supabase!
+    .from('questions')
+    .select('*')
+    .eq('community_id', communityId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchQuestion(questionId: string) {
+  const { data, error } = await supabase!
+    .from('questions')
+    .select('*')
+    .eq('id', questionId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createQuestion(question: {
+  community_id: string;
+  subcommittee_id?: string;
+  author_id: string;
+  author_name: string;
+  author_avatar?: string;
+  title: string;
+  body: string;
+}) {
+  const { data, error } = await supabase!.from('questions').insert(question).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateQuestionAnswers(questionId: string, answers: any[], isResolved: boolean) {
+  const { error } = await supabase!
+    .from('questions')
+    .update({ answers, is_resolved: isResolved })
+    .eq('id', questionId);
+  if (error) throw error;
+}
+
+export async function deleteQuestion(questionId: string) {
+  const { error } = await supabase!.from('questions').delete().eq('id', questionId);
+  if (error) throw error;
+}
+
+/* ─── MENTORS ─── */
+export async function fetchMentors(communityId: string) {
+  const { data, error } = await supabase!
+    .from('mentors')
+    .select('*')
+    .eq('community_id', communityId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function becomeMentor(mentor: {
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  community_id: string;
+  subcommittee_id: string;
+  bio?: string;
+}) {
+  const { data, error } = await supabase!
+    .from('mentors')
+    .upsert(mentor, { onConflict: 'user_id,subcommittee_id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function removeMentor(userId: string, subcommitteeId: string) {
+  const { error } = await supabase!
+    .from('mentors')
+    .delete()
+    .eq('user_id', userId)
+    .eq('subcommittee_id', subcommitteeId);
+  if (error) throw error;
+}

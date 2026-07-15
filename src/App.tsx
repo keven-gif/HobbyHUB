@@ -42,6 +42,8 @@ const Support          = lazy(() => import('./pages/Support'));
 const Community        = lazy(() => import('./pages/Community'));
 const GuideEditor       = lazy(() => import('./pages/GuideEditor'));
 const GuideDetail       = lazy(() => import('./pages/GuideDetail'));
+const AskQuestion       = lazy(() => import('./pages/AskQuestion'));
+const QuestionDetail    = lazy(() => import('./pages/QuestionDetail'));
 const CreatePost       = lazy(() => import('./pages/CreatePost'));
 const Profile          = lazy(() => import('./pages/Profile'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
@@ -94,6 +96,8 @@ function App() {
                       <Route path="community/:id/guides/new" element={<Suspense fallback={<InlineLoader />}><GuideEditor /></Suspense>} />
                       <Route path="community/:id/guides/:guideId/edit" element={<Suspense fallback={<InlineLoader />}><GuideEditor /></Suspense>} />
                       <Route path="community/:id/guides/:guideId" element={<Suspense fallback={<InlineLoader />}><GuideDetail /></Suspense>} />
+                      <Route path="community/:id/questions/new" element={<Suspense fallback={<InlineLoader />}><AskQuestion /></Suspense>} />
+                      <Route path="community/:id/questions/:questionId" element={<Suspense fallback={<InlineLoader />}><QuestionDetail /></Suspense>} />
                       <Route path="create-post" element={<Suspense fallback={<InlineLoader />}><CreatePost /></Suspense>} />
                       <Route path="notifications" element={<Suspense fallback={<InlineLoader />}><Notifications /></Suspense>} />
                       <Route path="messages" element={<Suspense fallback={<InlineLoader />}><Messages /></Suspense>} />
