@@ -44,6 +44,10 @@ const GuideEditor       = lazy(() => import('./pages/GuideEditor'));
 const GuideDetail       = lazy(() => import('./pages/GuideDetail'));
 const AskQuestion       = lazy(() => import('./pages/AskQuestion'));
 const QuestionDetail    = lazy(() => import('./pages/QuestionDetail'));
+const ProjectEditor     = lazy(() => import('./pages/ProjectEditor'));
+const ProjectDetail     = lazy(() => import('./pages/ProjectDetail'));
+const Updates           = lazy(() => import('./pages/Updates'));
+const DataPrivacy       = lazy(() => import('./pages/DataPrivacy'));
 const CreatePost       = lazy(() => import('./pages/CreatePost'));
 const Profile          = lazy(() => import('./pages/Profile'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
@@ -98,6 +102,8 @@ function App() {
                       <Route path="community/:id/guides/:guideId" element={<Suspense fallback={<InlineLoader />}><GuideDetail /></Suspense>} />
                       <Route path="community/:id/questions/new" element={<Suspense fallback={<InlineLoader />}><AskQuestion /></Suspense>} />
                       <Route path="community/:id/questions/:questionId" element={<Suspense fallback={<InlineLoader />}><QuestionDetail /></Suspense>} />
+                      <Route path="community/:id/projects/new" element={<Suspense fallback={<InlineLoader />}><ProjectEditor /></Suspense>} />
+                      <Route path="community/:id/projects/:projectId" element={<Suspense fallback={<InlineLoader />}><ProjectDetail /></Suspense>} />
                       <Route path="create-post" element={<Suspense fallback={<InlineLoader />}><CreatePost /></Suspense>} />
                       <Route path="notifications" element={<Suspense fallback={<InlineLoader />}><Notifications /></Suspense>} />
                       <Route path="messages" element={<Suspense fallback={<InlineLoader />}><Messages /></Suspense>} />
@@ -106,6 +112,8 @@ function App() {
                       <Route path="privacy" element={<Suspense fallback={<InlineLoader />}><PrivacyPolicy /></Suspense>} />
                       <Route path="terms" element={<Suspense fallback={<InlineLoader />}><TermsOfService /></Suspense>} />
                       <Route path="support" element={<Suspense fallback={<InlineLoader />}><Support /></Suspense>} />
+                      <Route path="updates" element={<Suspense fallback={<InlineLoader />}><Updates /></Suspense>} />
+                      <Route path="privacy-data" element={<Suspense fallback={<InlineLoader />}><DataPrivacy /></Suspense>} />
                     </Route>
                   </Routes>
                 </Router>

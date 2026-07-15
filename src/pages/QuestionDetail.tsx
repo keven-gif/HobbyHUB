@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getCommunity, getSubcommittees } from '@/data/communityData';
-import { fetchQuestion, updateQuestionAnswers, deleteQuestion } from '@/lib/supabaseQueries';
+import { fetchQuestion, updateQuestionAnswers, deleteQuestion, toggleQuestionReport } from '@/lib/supabaseQueries';
 import { Button } from '@/components/ui/button';
 import Avatar from '@/components/Avatar';
-import { ArrowLeft, Trash2, CheckCircle2, HelpCircle, Send } from 'lucide-react';
+import { ArrowLeft, Trash2, CheckCircle2, HelpCircle, Send, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 
 function timeAgo(ts: number): string {
@@ -90,6 +90,17 @@ export default function QuestionDetail() {
     }
   };
 
+  const handleReport = async () => {
+    if (!user || !question) return;
+    try {
+      const next = await toggleQuestionReport(question.id, user.id, question.reported_by || []);
+      setQuestion({ ...question, reported_by: next });
+      toast.success(next.includes(user.id) ? 'Reported' : 'Report removed');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to report question');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -124,9 +135,17 @@ export default function QuestionDetail() {
         >
           <ArrowLeft size={14} /> {community.name}
         </Link>
-        {isOwner && (
+        {isOwner ? (
           <button onClick={handleDelete} className="flex items-center gap-1 font-body text-xs px-2 py-1 rounded" style={{ color: '#ef4444' }}>
             <Trash2 size={13} /> Delete
+          </button>
+        ) : user && (
+          <button
+            onClick={handleReport}
+            className="flex items-center gap-1 font-body text-xs px-2 py-1 rounded"
+            style={{ color: (question.reported_by || []).includes(user.id) ? '#ef4444' : 'var(--text-muted)' }}
+          >
+            <Flag size={13} fill={(question.reported_by || []).includes(user.id) ? '#ef4444' : 'none'} />
           </button>
         )}
       </div>

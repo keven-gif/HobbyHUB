@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
   body TEXT NOT NULL,
   answers JSONB NOT NULL DEFAULT '[]',
   is_resolved BOOLEAN NOT NULL DEFAULT false,
+  reported_by TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -30,7 +31,9 @@ CREATE POLICY "Authenticated can ask questions" ON public.questions FOR INSERT T
 -- comments.
 CREATE POLICY "Authenticated can answer or resolve questions" ON public.questions FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
 
-CREATE POLICY "Authors can delete their questions" ON public.questions FOR DELETE TO authenticated USING (author_id = auth.uid()::text);
+CREATE POLICY "Authors and admins can delete questions" ON public.questions FOR DELETE TO authenticated USING (
+  author_id = auth.uid()::text OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+);
 
 -- Mentor opt-ins, scoped per subcommittee.
 CREATE TABLE IF NOT EXISTS public.mentors (

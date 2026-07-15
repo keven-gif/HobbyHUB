@@ -188,11 +188,17 @@ export const Navbar: React.FC = () => {
 
               {/* Legal Links */}
               <div className="pt-3 border-t">
+                <button onClick={() => navigate('/updates')} className="block w-full text-left font-body text-[11px] py-1 text-muted-foreground">
+                  From the Founder
+                </button>
                 <button onClick={() => navigate('/terms')} className="block w-full text-left font-body text-[11px] py-1 text-muted-foreground">
                   Terms of Service
                 </button>
                 <button onClick={() => navigate('/privacy')} className="block w-full text-left font-body text-[11px] py-1 text-muted-foreground">
                   Privacy Policy
+                </button>
+                <button onClick={() => navigate('/privacy-data')} className="block w-full text-left font-body text-[11px] py-1 text-muted-foreground">
+                  My Data
                 </button>
               </div>
 

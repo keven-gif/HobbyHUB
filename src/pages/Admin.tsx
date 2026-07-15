@@ -12,6 +12,12 @@ import { pickFile, fileToBase64 } from '@/lib/filePicker';
 import type { Subcommittee } from '@/data/communityData';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import {
+  clearPostReports,
+  fetchAllWikiArticles, deleteWikiArticle, clearWikiArticleReports,
+  fetchAllQuestions, deleteQuestion, clearQuestionReports,
+  fetchAllProjects, deleteProject, clearProjectReports,
+} from '@/lib/supabaseQueries';
 
 const ADMIN_EMAIL = 'roninonedigital@gmail.com';
 type TabKey = 'overview' | 'users' | 'posts' | 'reports' | 'communities';
@@ -109,11 +115,54 @@ export default function Admin() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const reportedPosts = useMemo(() => posts.filter((p) => (p.reportedBy?.length || 0) > 0), [posts]);
 
+  const [guides, setGuides] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const reportedGuides = useMemo(() => guides.filter((g) => (g.reported_by?.length || 0) > 0), [guides]);
+  const reportedQuestions = useMemo(() => questions.filter((q) => (q.reported_by?.length || 0) > 0), [questions]);
+  const reportedProjects = useMemo(() => projects.filter((p) => (p.reported_by?.length || 0) > 0), [projects]);
+  const totalReports = reportedPosts.length + reportedGuides.length + reportedQuestions.length + reportedProjects.length;
+
+  const loadModerationContent = () => {
+    fetchAllWikiArticles().then(setGuides).catch(() => {});
+    fetchAllQuestions().then(setQuestions).catch(() => {});
+    fetchAllProjects().then(setProjects).catch(() => {});
+  };
+
   useEffect(() => {
     loadAllUsers().then(setAllUsers);
+    loadModerationContent();
   }, []);
 
   const onDel = (id: string) => { if (window.confirm('Delete?')) { deletePost(id); toast.success('Deleted'); } };
+
+  const onDismissPost = async (id: string) => {
+    try { await clearPostReports(id); toast.success('Dismissed'); } catch (e: any) { toast.error(e?.message || 'Failed to dismiss'); }
+  };
+
+  const onDelGuide = async (id: string) => {
+    if (!window.confirm('Delete?')) return;
+    try { await deleteWikiArticle(id); setGuides((prev) => prev.filter((g) => g.id !== id)); toast.success('Deleted'); } catch (e: any) { toast.error(e?.message || 'Failed to delete'); }
+  };
+  const onDismissGuide = async (id: string) => {
+    try { await clearWikiArticleReports(id); setGuides((prev) => prev.map((g) => g.id === id ? { ...g, reported_by: [] } : g)); toast.success('Dismissed'); } catch (e: any) { toast.error(e?.message || 'Failed to dismiss'); }
+  };
+
+  const onDelQuestion = async (id: string) => {
+    if (!window.confirm('Delete?')) return;
+    try { await deleteQuestion(id); setQuestions((prev) => prev.filter((q) => q.id !== id)); toast.success('Deleted'); } catch (e: any) { toast.error(e?.message || 'Failed to delete'); }
+  };
+  const onDismissQuestion = async (id: string) => {
+    try { await clearQuestionReports(id); setQuestions((prev) => prev.map((q) => q.id === id ? { ...q, reported_by: [] } : q)); toast.success('Dismissed'); } catch (e: any) { toast.error(e?.message || 'Failed to dismiss'); }
+  };
+
+  const onDelProject = async (id: string) => {
+    if (!window.confirm('Delete?')) return;
+    try { await deleteProject(id); setProjects((prev) => prev.filter((p) => p.id !== id)); toast.success('Deleted'); } catch (e: any) { toast.error(e?.message || 'Failed to delete'); }
+  };
+  const onDismissProject = async (id: string) => {
+    try { await clearProjectReports(id); setProjects((prev) => prev.map((p) => p.id === id ? { ...p, reported_by: [] } : p)); toast.success('Dismissed'); } catch (e: any) { toast.error(e?.message || 'Failed to dismiss'); }
+  };
 
   if (!isAdmin) {
     return (
@@ -164,7 +213,7 @@ export default function Admin() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           <StatCard label="Users" value={allUsers.length} icon={Users} color="#4a80ff" />
           <StatCard label="Posts" value={posts.length} icon={FileText} color="#10b981" />
-          <StatCard label="Reports" value={reportedPosts.length} icon={Flag} color="#ef4444" />
+          <StatCard label="Reports" value={totalReports} icon={Flag} color="#ef4444" />
           <StatCard label="Communities" value={communities.length} icon={Shield} color="#f5a623" />
           <StatCard label="Likes" value={posts.reduce((s, p) => s + (p.likedBy?.length || 0), 0)} icon={TrendingUp} color="#8b5cf6" />
         </div>
@@ -273,23 +322,79 @@ export default function Admin() {
         {/* ─── REPORTS ─── */}
         {tab === 'reports' && (
           <div className="space-y-3">
-            {reportedPosts.length === 0 ? (
-              <div className="flex flex-col items-center py-12"><CheckCircle size={40} style={{ color: '#10b981' }} /><p className="font-body text-sm mt-3" style={{ color: 'var(--text-muted)' }}>No flagged posts</p></div>
-            ) : reportedPosts.map((p) => (
-              <div key={p.id} className="rounded-lg p-4" style={{ backgroundColor: '#ef444410', border: '1px solid #ef444440' }}>
-                <div className="flex items-start gap-3">
-                  <Flag size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
-                  <div className="flex-1">
-                    <p className="font-body text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{p.user}</p>
-                    <p className="font-body text-xs my-1" style={{ color: 'var(--text-secondary)' }}>{p.content}</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => onDel(p.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded text-white" style={{ backgroundColor: '#ef4444' }}><Trash2 size={10} /> Remove</button>
-                      <button onClick={() => toast.success('Dismissed')} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded" style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}><XCircle size={10} /> Dismiss</button>
+            {totalReports === 0 ? (
+              <div className="flex flex-col items-center py-12"><CheckCircle size={40} style={{ color: '#10b981' }} /><p className="font-body text-sm mt-3" style={{ color: 'var(--text-muted)' }}>Nothing flagged</p></div>
+            ) : (
+              <>
+                {reportedPosts.map((p) => (
+                  <div key={p.id} className="rounded-lg p-4" style={{ backgroundColor: '#ef444410', border: '1px solid #ef444440' }}>
+                    <div className="flex items-start gap-3">
+                      <Flag size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+                      <div className="flex-1">
+                        <span className="font-body text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#ef444420', color: '#ef4444' }}>POST</span>
+                        <p className="font-body text-xs font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{p.user} · {p.reportedBy.length} report{p.reportedBy.length !== 1 ? 's' : ''}</p>
+                        <p className="font-body text-xs my-1" style={{ color: 'var(--text-secondary)' }}>{p.content}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => onDel(p.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded text-white" style={{ backgroundColor: '#ef4444' }}><Trash2 size={10} /> Remove</button>
+                          <button onClick={() => onDismissPost(p.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded" style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}><XCircle size={10} /> Dismiss</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))}
+
+                {reportedGuides.map((g) => (
+                  <div key={g.id} className="rounded-lg p-4" style={{ backgroundColor: '#ef444410', border: '1px solid #ef444440' }}>
+                    <div className="flex items-start gap-3">
+                      <Flag size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+                      <div className="flex-1">
+                        <span className="font-body text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#ef444420', color: '#ef4444' }}>GUIDE</span>
+                        <p className="font-body text-xs font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{g.author_name} · {g.reported_by.length} report{g.reported_by.length !== 1 ? 's' : ''}</p>
+                        <p className="font-body text-xs my-1" style={{ color: 'var(--text-secondary)' }}>{g.title}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => onDelGuide(g.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded text-white" style={{ backgroundColor: '#ef4444' }}><Trash2 size={10} /> Remove</button>
+                          <button onClick={() => onDismissGuide(g.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded" style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}><XCircle size={10} /> Dismiss</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {reportedQuestions.map((q) => (
+                  <div key={q.id} className="rounded-lg p-4" style={{ backgroundColor: '#ef444410', border: '1px solid #ef444440' }}>
+                    <div className="flex items-start gap-3">
+                      <Flag size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+                      <div className="flex-1">
+                        <span className="font-body text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#ef444420', color: '#ef4444' }}>QUESTION</span>
+                        <p className="font-body text-xs font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{q.author_name} · {q.reported_by.length} report{q.reported_by.length !== 1 ? 's' : ''}</p>
+                        <p className="font-body text-xs my-1" style={{ color: 'var(--text-secondary)' }}>{q.title}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => onDelQuestion(q.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded text-white" style={{ backgroundColor: '#ef4444' }}><Trash2 size={10} /> Remove</button>
+                          <button onClick={() => onDismissQuestion(q.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded" style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}><XCircle size={10} /> Dismiss</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {reportedProjects.map((pr) => (
+                  <div key={pr.id} className="rounded-lg p-4" style={{ backgroundColor: '#ef444410', border: '1px solid #ef444440' }}>
+                    <div className="flex items-start gap-3">
+                      <Flag size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+                      <div className="flex-1">
+                        <span className="font-body text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: '#ef444420', color: '#ef4444' }}>PROJECT</span>
+                        <p className="font-body text-xs font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{pr.author_name} · {pr.reported_by.length} report{pr.reported_by.length !== 1 ? 's' : ''}</p>
+                        <p className="font-body text-xs my-1" style={{ color: 'var(--text-secondary)' }}>{pr.title}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => onDelProject(pr.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded text-white" style={{ backgroundColor: '#ef4444' }}><Trash2 size={10} /> Remove</button>
+                          <button onClick={() => onDismissProject(pr.id)} className="flex items-center gap-1 font-body text-xs px-3 py-1.5 rounded" style={{ border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}><XCircle size={10} /> Dismiss</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         )}
 

@@ -387,3 +387,202 @@ export async function removeMentor(userId: string, subcommitteeId: string) {
     .eq('subcommittee_id', subcommitteeId);
   if (error) throw error;
 }
+
+/* ─── PROJECTS ─── */
+export async function fetchProjects(communityId: string) {
+  const { data, error } = await supabase!
+    .from('projects')
+    .select('*')
+    .eq('community_id', communityId)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchProject(projectId: string) {
+  const { data, error } = await supabase!
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createProject(project: {
+  community_id: string;
+  subcommittee_id?: string;
+  author_id: string;
+  author_name: string;
+  author_avatar?: string;
+  title: string;
+  description: string;
+  status: string;
+  cover_image?: string;
+}) {
+  const { data, error } = await supabase!.from('projects').insert(project).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProject(
+  projectId: string,
+  updates: { status?: string; updates?: any[] }
+) {
+  const { data, error } = await supabase!
+    .from('projects')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', projectId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteProject(projectId: string) {
+  const { error } = await supabase!.from('projects').delete().eq('id', projectId);
+  if (error) throw error;
+}
+
+/* ─── MODERATION ─── */
+export async function clearPostReports(postId: string) {
+  const { error } = await supabase!.from('posts').update({ reported_by: [] }).eq('id', postId);
+  if (error) throw error;
+}
+
+export async function toggleWikiArticleReport(articleId: string, userId: string, currentReportedBy: string[]) {
+  const next = currentReportedBy.includes(userId)
+    ? currentReportedBy.filter((id) => id !== userId)
+    : [...currentReportedBy, userId];
+  const { error } = await supabase!.from('wiki_articles').update({ reported_by: next }).eq('id', articleId);
+  if (error) throw error;
+  return next;
+}
+
+export async function clearWikiArticleReports(articleId: string) {
+  const { error } = await supabase!.from('wiki_articles').update({ reported_by: [] }).eq('id', articleId);
+  if (error) throw error;
+}
+
+export async function toggleQuestionReport(questionId: string, userId: string, currentReportedBy: string[]) {
+  const next = currentReportedBy.includes(userId)
+    ? currentReportedBy.filter((id) => id !== userId)
+    : [...currentReportedBy, userId];
+  const { error } = await supabase!.from('questions').update({ reported_by: next }).eq('id', questionId);
+  if (error) throw error;
+  return next;
+}
+
+export async function clearQuestionReports(questionId: string) {
+  const { error } = await supabase!.from('questions').update({ reported_by: [] }).eq('id', questionId);
+  if (error) throw error;
+}
+
+export async function toggleProjectReport(projectId: string, userId: string, currentReportedBy: string[]) {
+  const next = currentReportedBy.includes(userId)
+    ? currentReportedBy.filter((id) => id !== userId)
+    : [...currentReportedBy, userId];
+  const { error } = await supabase!.from('projects').update({ reported_by: next }).eq('id', projectId);
+  if (error) throw error;
+  return next;
+}
+
+export async function clearProjectReports(projectId: string) {
+  const { error } = await supabase!.from('projects').update({ reported_by: [] }).eq('id', projectId);
+  if (error) throw error;
+}
+
+/* Cross-community fetches for the admin moderation queue */
+export async function fetchAllWikiArticles() {
+  const { data, error } = await supabase!.from('wiki_articles').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchAllQuestions() {
+  const { data, error } = await supabase!.from('questions').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchAllProjects() {
+  const { data, error } = await supabase!.from('projects').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+/* ─── UPVOTES (Guides) ─── */
+export async function toggleWikiArticleUpvote(articleId: string, userId: string, currentUpvotedBy: string[]) {
+  const next = currentUpvotedBy.includes(userId)
+    ? currentUpvotedBy.filter((id) => id !== userId)
+    : [...currentUpvotedBy, userId];
+  const { error } = await supabase!.from('wiki_articles').update({ upvoted_by: next }).eq('id', articleId);
+  if (error) throw error;
+  return next;
+}
+
+/* ─── FOUNDER UPDATES ─── */
+export async function fetchFounderUpdates() {
+  const { data, error } = await supabase!
+    .from('founder_updates')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createFounderUpdate(update: {
+  author_id: string;
+  author_name: string;
+  author_avatar?: string;
+  title: string;
+  content: string;
+}) {
+  const { data, error } = await supabase!.from('founder_updates').insert(update).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteFounderUpdate(updateId: string) {
+  const { error } = await supabase!.from('founder_updates').delete().eq('id', updateId);
+  if (error) throw error;
+}
+
+/* ─── DATA SOVEREIGNTY ─── */
+/** Everything the app has stored that's identifiably this user's. */
+export async function exportUserData(userId: string) {
+  const [profile, posts, guides, questions, projects, joins, mentorListings, friendRequests] = await Promise.all([
+    supabase!.from('profiles').select('*').eq('id', userId).single().then((r) => r.data),
+    supabase!.from('posts').select('*').eq('user_id', userId).then((r) => r.data || []),
+    supabase!.from('wiki_articles').select('*').eq('author_id', userId).then((r) => r.data || []),
+    supabase!.from('questions').select('*').eq('author_id', userId).then((r) => r.data || []),
+    supabase!.from('projects').select('*').eq('author_id', userId).then((r) => r.data || []),
+    supabase!.from('subcommittee_joins').select('*').eq('user_id', userId).then((r) => r.data || []),
+    supabase!.from('mentors').select('*').eq('user_id', userId).then((r) => r.data || []),
+    supabase!.from('friend_requests').select('*').or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`).then((r) => r.data || []),
+  ]);
+
+  return {
+    exported_at: new Date().toISOString(),
+    profile,
+    posts,
+    guides,
+    questions,
+    projects,
+    subcommittee_joins: joins,
+    mentor_listings: mentorListings,
+    friend_requests: friendRequests,
+  };
+}
+
+/** Deletes everything this user authored -- posts, guides, questions,
+ * projects. Does NOT delete the account itself (that needs a service-role
+ * backend action this client-only app doesn't have). */
+export async function deleteAllUserContent(userId: string) {
+  await Promise.all([
+    supabase!.from('posts').delete().eq('user_id', userId),
+    supabase!.from('wiki_articles').delete().eq('author_id', userId),
+    supabase!.from('questions').delete().eq('author_id', userId),
+    supabase!.from('projects').delete().eq('author_id', userId),
+  ]);
+}

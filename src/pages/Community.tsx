@@ -3,12 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Flame, MessageCircle, Bookmark, Share2, Calendar,
   Users, FileText, Info, Wrench, Check, Circle, Flag,
-  Send, Trash2, BookOpen, Search, Plus, HelpCircle, X,
+  Send, Trash2, BookOpen, Search, Plus, HelpCircle, X, ThumbsUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  getCommunity, getPosts, getBuilds, getRules,
-  getSubcommittees, type Post as MockPost, type Build,
+  getCommunity, getPosts, getRules,
+  getSubcommittees, type Post as MockPost,
 } from '@/data/communityData';
 import { usePosts, type Post as RealPost } from '@/context/PostContext';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +17,7 @@ import { useSubcommitteeMemberCounts } from '@/hooks/useSubcommitteeMemberCounts
 import { getCommunityMembersAsync, getCommunitySubIds, type CommunityMember } from '@/lib/membershipRegistry';
 import {
   fetchEvents, createEvent, deleteEvent, fetchWikiArticles,
-  fetchQuestions, fetchMentors, becomeMentor, removeMentor,
+  fetchQuestions, fetchMentors, becomeMentor, removeMentor, fetchProjects,
 } from '@/lib/supabaseQueries';
 import { toast } from 'sonner';
 import Avatar from '@/components/Avatar';
@@ -371,33 +371,121 @@ function FeedPostCard({
 }
 
 /* ════════════════════════════════════════════════════
-   TAB: BUILDS
+   TAB: PROJECTS
    ════════════════════════════════════════════════════ */
-function BuildsTab({ communityId }: { communityId: string }) {
-  const builds = useMemo(() => getBuilds(communityId), [communityId]);
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  planning: 'Planning',
+  in_progress: 'In Progress',
+  done: 'Done',
+};
+
+const PROJECT_STATUS_COLORS: Record<string, string> = {
+  planning: '#f1c40f',
+  in_progress: '#3a8cff',
+  done: '#39ff14',
+};
+
+function ProjectsTab({ communityId }: { communityId: string }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchProjects(communityId)
+      .then((data) => { if (!cancelled) setProjects(data); })
+      .catch(() => toast.error('Failed to load projects'))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [communityId]);
+
+  const filtered = useMemo(
+    () => (statusFilter === 'all' ? projects : projects.filter((p) => p.status === statusFilter)),
+    [projects, statusFilter]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent-primary)', borderTopColor: 'transparent' }} />
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {builds.map((build: Build) => (
-        <div key={build.id} className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
-          <div className="overflow-hidden" style={{ aspectRatio: '16/10' }}>
-            <img src={build.image} alt={build.title} className="w-full h-full object-cover" loading="lazy" />
-          </div>
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <img src={build.avatar} alt={build.user} className="w-6 h-6 rounded-full object-cover" loading="lazy" />
-              <span className="font-body text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{build.user}</span>
-            </div>
-            <h3 className="font-body text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{build.title}</h3>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {build.tags.map((tag) => (
-                <span key={tag} className="font-body text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent-primary)15', color: 'var(--accent-primary)' }}>{tag}</span>
-              ))}
-            </div>
-            <span className="flex items-center gap-1 font-body text-xs" style={{ color: 'var(--text-muted)' }}><Flame size={12} /> {build.likes}</span>
-          </div>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex gap-1.5">
+          {['all', 'planning', 'in_progress', 'done'].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className="font-body text-[11px] px-2.5 py-1 rounded-full"
+              style={{
+                backgroundColor: statusFilter === s ? (PROJECT_STATUS_COLORS[s] || 'var(--accent-primary)') + '22' : 'var(--bg-surface)',
+                color: statusFilter === s ? (PROJECT_STATUS_COLORS[s] || 'var(--accent-primary)') : 'var(--text-muted)',
+                border: `1px solid ${statusFilter === s ? (PROJECT_STATUS_COLORS[s] || 'var(--accent-primary)') : 'var(--border-subtle)'}`,
+              }}
+            >
+              {s === 'all' ? 'All' : PROJECT_STATUS_LABELS[s]}
+            </button>
+          ))}
         </div>
-      ))}
-      {builds.length === 0 && <EmptyTab icon={Wrench} text="No builds shared yet." />}
+        {user && (
+          <button
+            onClick={() => navigate(`/community/${communityId}/projects/new`)}
+            className="flex items-center gap-1.5 font-body text-xs font-medium px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: 'var(--accent-primary)', color: '#fff' }}
+          >
+            <Plus size={14} /> New Project
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {filtered.map((project) => (
+          <Link
+            key={project.id}
+            to={`/community/${communityId}/projects/${project.id}`}
+            className="rounded-lg overflow-hidden"
+            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+          >
+            {project.cover_image ? (
+              <div className="overflow-hidden" style={{ aspectRatio: '16/10' }}>
+                <img src={project.cover_image} alt={project.title} className="w-full h-full object-cover" loading="lazy" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center" style={{ aspectRatio: '16/10', backgroundColor: '#1a1a1a' }}>
+                <Wrench size={28} style={{ color: 'var(--text-muted)' }} />
+              </div>
+            )}
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Avatar src={project.author_avatar} name={project.author_name} size={22} />
+                <span className="font-body text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{project.author_name}</span>
+              </div>
+              <h3 className="font-body text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{project.title}</h3>
+              <div className="flex items-center gap-2">
+                <span
+                  className="font-body text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                  style={{ backgroundColor: `${PROJECT_STATUS_COLORS[project.status]}22`, color: PROJECT_STATUS_COLORS[project.status] }}
+                >
+                  {PROJECT_STATUS_LABELS[project.status] || project.status}
+                </span>
+                <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  {(project.updates || []).length} updates
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+        {filtered.length === 0 && (
+          <EmptyTab icon={Wrench} text={statusFilter === 'all' ? 'No projects yet. Start tracking your build.' : 'No projects with this status.'} />
+        )}
+      </div>
     </div>
   );
 }
@@ -553,12 +641,15 @@ function GuidesTab({ communityId, accentColor }: { communityId: string; accentCo
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return articles;
-    return articles.filter((a) =>
-      a.title.toLowerCase().includes(q) ||
-      a.content.toLowerCase().includes(q) ||
-      (a.tags || []).some((t: string) => t.toLowerCase().includes(q))
-    );
+    const base = !q
+      ? articles
+      : articles.filter((a) =>
+          a.title.toLowerCase().includes(q) ||
+          a.content.toLowerCase().includes(q) ||
+          (a.tags || []).some((t: string) => t.toLowerCase().includes(q))
+        );
+    // Surface high-quality (highly-upvoted) content over merely-recent content.
+    return [...base].sort((a, b) => (b.upvoted_by?.length || 0) - (a.upvoted_by?.length || 0));
   }, [articles, search]);
 
   return (
@@ -597,32 +688,49 @@ function GuidesTab({ communityId, accentColor }: { communityId: string; accentCo
         />
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((article) => (
-            <Link
-              key={article.id}
-              to={`/community/${communityId}/guides/${article.id}`}
-              className="p-3 rounded-lg"
-              style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span
-                  className="font-body text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide"
-                  style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
-                >
-                  {GUIDE_CATEGORY_LABELS[article.category] || article.category}
-                </span>
-                <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                  by {article.author_name}
-                </span>
-              </div>
-              <p className="font-body text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                {article.title}
-              </p>
-              <p className="font-body text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>
-                {article.content}
-              </p>
-            </Link>
-          ))}
+          {filtered.map((article, i) => {
+            const upvotes = article.upvoted_by?.length || 0;
+            const isFeatured = i === 0 && !search && upvotes > 0;
+            return (
+              <Link
+                key={article.id}
+                to={`/community/${communityId}/guides/${article.id}`}
+                className="p-3 rounded-lg"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  border: isFeatured ? `1px solid ${accentColor}` : '1px solid var(--border-subtle)',
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  {isFeatured && (
+                    <span className="font-body text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide" style={{ backgroundColor: `${accentColor}22`, color: accentColor }}>
+                      Featured
+                    </span>
+                  )}
+                  <span
+                    className="font-body text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                    style={{ backgroundColor: '#1a1a1a', color: 'var(--text-muted)' }}
+                  >
+                    {GUIDE_CATEGORY_LABELS[article.category] || article.category}
+                  </span>
+                  <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                    by {article.author_name}
+                  </span>
+                  {upvotes > 0 && (
+                    <span className="flex items-center gap-1 font-body text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>
+                      <ThumbsUp size={10} /> {upvotes}
+                    </span>
+                  )}
+                </div>
+                <p className="font-body text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  {article.title}
+                </p>
+                <p className="font-body text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>
+                  {article.content}
+                </p>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1018,7 +1126,7 @@ export default function Community() {
   const tabs: { key: TabKey; label: string; icon: any }[] = [
     { key: 'feed', label: 'Feed', icon: FileText },
     { key: 'guides', label: 'Guides', icon: BookOpen },
-    { key: 'builds', label: 'Builds', icon: Wrench },
+    { key: 'builds', label: 'Projects', icon: Wrench },
     { key: 'events', label: 'Events', icon: Calendar },
     { key: 'qna', label: 'Q&A', icon: HelpCircle },
     { key: 'members', label: 'Members', icon: Users },
@@ -1103,7 +1211,7 @@ export default function Community() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'feed' && <FeedTab communityId={communityId} />}
           {activeTab === 'guides' && <GuidesTab communityId={communityId} accentColor={accentColor} />}
-          {activeTab === 'builds' && <BuildsTab communityId={communityId} />}
+          {activeTab === 'builds' && <ProjectsTab communityId={communityId} />}
           {activeTab === 'events' && <EventsTab communityId={communityId} />}
           {activeTab === 'qna' && <MentorQnATab communityId={communityId} accentColor={accentColor} />}
           {activeTab === 'members' && <MembersTab communityId={communityId} subIds={subIds} />}

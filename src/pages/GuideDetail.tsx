@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getCommunity, getSubcommittees } from '@/data/communityData';
-import { fetchWikiArticle, deleteWikiArticle } from '@/lib/supabaseQueries';
+import { fetchWikiArticle, deleteWikiArticle, toggleWikiArticleReport, toggleWikiArticleUpvote } from '@/lib/supabaseQueries';
 import { Button } from '@/components/ui/button';
 import Avatar from '@/components/Avatar';
-import { ArrowLeft, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, BookOpen, Flag, ThumbsUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -51,6 +51,27 @@ export default function GuideDetail() {
     }
   };
 
+  const handleReport = async () => {
+    if (!user || !article) return;
+    try {
+      const next = await toggleWikiArticleReport(article.id, user.id, article.reported_by || []);
+      setArticle({ ...article, reported_by: next });
+      toast.success(next.includes(user.id) ? 'Reported' : 'Report removed');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to report guide');
+    }
+  };
+
+  const handleUpvote = async () => {
+    if (!user || !article) return;
+    try {
+      const next = await toggleWikiArticleUpvote(article.id, user.id, article.upvoted_by || []);
+      setArticle({ ...article, upvoted_by: next });
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upvote guide');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -73,6 +94,10 @@ export default function GuideDetail() {
 
   const isOwner = user?.id === article.author_id;
   const subName = subs.find((s) => s.id === article.subcommittee_id)?.name;
+  const upvotedBy: string[] = article.upvoted_by || [];
+  const reportedBy: string[] = article.reported_by || [];
+  const isUpvoted = user ? upvotedBy.includes(user.id) : false;
+  const isReported = user ? reportedBy.includes(user.id) : false;
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 pb-20">
@@ -84,24 +109,44 @@ export default function GuideDetail() {
         >
           <ArrowLeft size={14} /> {community.name}
         </Link>
-        {isOwner && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {user && (
             <button
-              onClick={() => navigate(`/community/${communityId}/guides/${article.id}/edit`)}
+              onClick={handleUpvote}
               className="flex items-center gap-1 font-body text-xs px-2 py-1 rounded"
-              style={{ color: 'var(--text-muted)' }}
+              style={{ color: isUpvoted ? community.accentColor : 'var(--text-muted)' }}
             >
-              <Pencil size={13} /> Edit
+              <ThumbsUp size={13} fill={isUpvoted ? community.accentColor : 'none'} /> {upvotedBy.length}
             </button>
+          )}
+          {isOwner && (
+            <>
+              <button
+                onClick={() => navigate(`/community/${communityId}/guides/${article.id}/edit`)}
+                className="flex items-center gap-1 font-body text-xs px-2 py-1 rounded"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <Pencil size={13} /> Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 font-body text-xs px-2 py-1 rounded"
+                style={{ color: '#ef4444' }}
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+            </>
+          )}
+          {!isOwner && user && (
             <button
-              onClick={handleDelete}
+              onClick={handleReport}
               className="flex items-center gap-1 font-body text-xs px-2 py-1 rounded"
-              style={{ color: '#ef4444' }}
+              style={{ color: isReported ? '#ef4444' : 'var(--text-muted)' }}
             >
-              <Trash2 size={13} /> Delete
+              <Flag size={13} fill={isReported ? '#ef4444' : 'none'} />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-3">
