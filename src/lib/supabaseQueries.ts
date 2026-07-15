@@ -246,3 +246,59 @@ export async function deleteEvent(eventId: string) {
   const { error } = await supabase!.from('events').delete().eq('id', eventId);
   if (error) throw error;
 }
+
+/* ─── WIKI ARTICLES ─── */
+export async function fetchWikiArticles(communityId: string) {
+  const { data, error } = await supabase!
+    .from('wiki_articles')
+    .select('*')
+    .eq('community_id', communityId)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchWikiArticle(articleId: string) {
+  const { data, error } = await supabase!
+    .from('wiki_articles')
+    .select('*')
+    .eq('id', articleId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createWikiArticle(article: {
+  community_id: string;
+  subcommittee_id?: string;
+  category: string;
+  title: string;
+  content: string;
+  tags: string[];
+  author_id: string;
+  author_name: string;
+  author_avatar?: string;
+}) {
+  const { data, error } = await supabase!.from('wiki_articles').insert(article).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateWikiArticle(
+  articleId: string,
+  updates: { title: string; content: string; category: string; tags: string[]; subcommittee_id?: string }
+) {
+  const { data, error } = await supabase!
+    .from('wiki_articles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', articleId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteWikiArticle(articleId: string) {
+  const { error } = await supabase!.from('wiki_articles').delete().eq('id', articleId);
+  if (error) throw error;
+}

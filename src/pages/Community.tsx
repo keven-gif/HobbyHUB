@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Flame, MessageCircle, Bookmark, Share2, Calendar,
   Users, FileText, Info, Wrench, Check, Circle, Flag,
-  Send, Trash2,
+  Send, Trash2, BookOpen, Search, Plus,
 } from 'lucide-react';
 import {
   getCommunity, getPosts, getBuilds, getRules,
@@ -14,7 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useJoinedSubcommittees } from '@/hooks/useJoinedSubcommittees';
 import { useSubcommitteeMemberCounts } from '@/hooks/useSubcommitteeMemberCounts';
 import { getCommunityMembersAsync, getCommunitySubIds, type CommunityMember } from '@/lib/membershipRegistry';
-import { fetchEvents, createEvent, deleteEvent } from '@/lib/supabaseQueries';
+import { fetchEvents, createEvent, deleteEvent, fetchWikiArticles } from '@/lib/supabaseQueries';
 import { toast } from 'sonner';
 import Avatar from '@/components/Avatar';
 
@@ -522,6 +522,110 @@ function EventsTab({ communityId }: { communityId: string }) {
 }
 
 /* ════════════════════════════════════════════════════
+   TAB: GUIDES
+   ════════════════════════════════════════════════════ */
+const GUIDE_CATEGORY_LABELS: Record<string, string> = {
+  guide: 'Guide',
+  review: 'Review',
+  tutorial: 'Tutorial',
+};
+
+function GuidesTab({ communityId, accentColor }: { communityId: string; accentColor: string }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchWikiArticles(communityId)
+      .then((data) => { if (!cancelled) setArticles(data); })
+      .catch(() => { if (!cancelled) toast.error('Failed to load guides'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [communityId]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return articles;
+    return articles.filter((a) =>
+      a.title.toLowerCase().includes(q) ||
+      a.content.toLowerCase().includes(q) ||
+      (a.tags || []).some((t: string) => t.toLowerCase().includes(q))
+    );
+  }, [articles, search]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+          <Search size={14} style={{ color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search guides, reviews, tutorials..."
+            className="flex-1 bg-transparent outline-none font-body text-sm"
+            style={{ color: 'var(--text-primary)' }}
+          />
+        </div>
+        {user && (
+          <button
+            onClick={() => navigate(`/community/${communityId}/guides/new`)}
+            className="flex items-center gap-1.5 font-body text-xs font-medium px-3 py-2 rounded-lg flex-shrink-0"
+            style={{ backgroundColor: accentColor, color: '#fff' }}
+          >
+            <Plus size={14} /> New
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: accentColor, borderTopColor: 'transparent' }} />
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyTab
+          icon={BookOpen}
+          text={search ? 'No guides match your search.' : 'No guides yet. Share the first how-to, review, or tutorial.'}
+        />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {filtered.map((article) => (
+            <Link
+              key={article.id}
+              to={`/community/${communityId}/guides/${article.id}`}
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <span
+                  className="font-body text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                  style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
+                >
+                  {GUIDE_CATEGORY_LABELS[article.category] || article.category}
+                </span>
+                <span className="font-body text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  by {article.author_name}
+                </span>
+              </div>
+              <p className="font-body text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                {article.title}
+              </p>
+              <p className="font-body text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>
+                {article.content}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════
    TAB: MEMBERS
    ════════════════════════════════════════════════════ */
 function MembersTab({ communityId, subIds }: { communityId: string; subIds: string[] }) {
@@ -628,7 +732,7 @@ function EmptyTab({ icon: Icon, text }: { icon: any; text: string }) {
 /* ════════════════════════════════════════════════════
    MAIN COMMUNITY PAGE
    ════════════════════════════════════════════════════ */
-type TabKey = 'feed' | 'builds' | 'events' | 'members' | 'about';
+type TabKey = 'feed' | 'guides' | 'builds' | 'events' | 'members' | 'about';
 
 export default function Community() {
   const { id } = useParams<{ id: string }>();
@@ -659,6 +763,7 @@ export default function Community() {
 
   const tabs: { key: TabKey; label: string; icon: any }[] = [
     { key: 'feed', label: 'Feed', icon: FileText },
+    { key: 'guides', label: 'Guides', icon: BookOpen },
     { key: 'builds', label: 'Builds', icon: Wrench },
     { key: 'events', label: 'Events', icon: Calendar },
     { key: 'members', label: 'Members', icon: Users },
@@ -742,6 +847,7 @@ export default function Community() {
       <section className="px-6 py-4 pb-20">
         <div className="max-w-7xl mx-auto">
           {activeTab === 'feed' && <FeedTab communityId={communityId} />}
+          {activeTab === 'guides' && <GuidesTab communityId={communityId} accentColor={accentColor} />}
           {activeTab === 'builds' && <BuildsTab communityId={communityId} />}
           {activeTab === 'events' && <EventsTab communityId={communityId} />}
           {activeTab === 'members' && <MembersTab communityId={communityId} subIds={subIds} />}
