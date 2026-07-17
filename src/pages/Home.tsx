@@ -343,7 +343,7 @@ export default function Home() {
 
   if (user && count > 0) {
     return (
-      <div className="min-h-[100dvh] px-4 pt-4 pb-20" style={{ backgroundColor: '#000000' }}>
+      <div className="min-h-[100dvh] px-4 pt-4 pb-20" style={{ backgroundColor: '#000000', overflowX: 'hidden', touchAction: 'pan-y' }}>
         <div className="flex items-center justify-between mb-4">
           <h1 className="font-display text-lg tracking-wider" style={{ color: '#ffffff' }}>YOUR FEED</h1>
           <span className="font-body text-xs" style={{ color: '#666666' }}>{feedPosts.length} posts</span>
@@ -364,7 +364,7 @@ export default function Home() {
 
   if (user && count === 0) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000' }}>
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000', overflowX: 'hidden', touchAction: 'pan-y' }}>
         <Users size={56} style={{ color: '#333333', marginBottom: 20 }} />
         <h2 className="font-display text-xl tracking-wider mb-2" style={{ color: '#ffffff' }}>YOUR FEED IS EMPTY</h2>
         <p className="font-body text-sm text-center mb-8 max-w-[280px]" style={{ color: '#666666' }}>Join subcommittees to see posts from people who share your niche interest.</p>
@@ -376,7 +376,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000' }}>
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000', overflowX: 'hidden', touchAction: 'pan-y' }}>
       <h1 className="font-display text-3xl tracking-wider mb-3 text-center" style={{ color: '#ffffff' }}>HOBBYHUB</h1>
       <p className="font-body text-sm text-center mb-8 max-w-[280px]" style={{ color: '#666666' }}>The community for hobby enthusiasts. Find your niche, share your passion.</p>
       <div className="flex flex-col gap-3 w-full max-w-[260px]">
