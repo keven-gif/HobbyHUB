@@ -305,6 +305,72 @@ const FeedPostCard = memo(function FeedPostCard({ post }: { post: any }) {
   );
 });
 
+/* ─── Horizontal swipe pager for feed posts ─── */
+const swipeConfidenceThreshold = 80;
+const swipePower = (offset: number, velocity: number) => Math.abs(offset) * velocity;
+
+function FeedSwiper({ posts }: { posts: any[] }) {
+  const [[index, direction], setPage] = useState<[number, number]>([0, 0]);
+  const clampedIndex = Math.min(index, Math.max(0, posts.length - 1));
+  const post = posts[clampedIndex];
+
+  const paginate = (newDirection: number) => {
+    setPage(([prevIndex]) => {
+      const next = prevIndex + newDirection;
+      if (next < 0 || next >= posts.length) return [prevIndex, 0];
+      return [next, newDirection];
+    });
+  };
+
+  if (!post) return null;
+
+  return (
+    <div>
+      <div className="relative" style={{ touchAction: 'pan-y' }}>
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={post.id}
+            initial={{ x: direction > 0 ? 60 : direction < 0 ? -60 : 0, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: direction > 0 ? -60 : 60, opacity: 0 }}
+            transition={{ duration: 0.22, ease: easeOutExpo }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.7}
+            onDragEnd={(_: any, info: any) => {
+              const swipe = swipePower(info.offset.x, info.velocity.x);
+              if (swipe < -swipeConfidenceThreshold) paginate(1);
+              else if (swipe > swipeConfidenceThreshold) paginate(-1);
+            }}
+          >
+            <FeedPostCard post={post} />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="flex items-center justify-center gap-3 mt-4">
+        <button
+          onClick={() => paginate(-1)}
+          disabled={clampedIndex === 0}
+          className="font-body text-xs px-3 py-2 rounded-full disabled:opacity-30"
+          style={{ color: '#aaaaaa', border: '1px solid #333333', WebkitTapHighlightColor: 'transparent' }}
+        >
+          Prev
+        </button>
+        <span className="font-body text-xs" style={{ color: '#666666' }}>{clampedIndex + 1} / {posts.length}</span>
+        <button
+          onClick={() => paginate(1)}
+          disabled={clampedIndex === posts.length - 1}
+          className="font-body text-xs px-3 py-2 rounded-full disabled:opacity-30"
+          style={{ color: '#aaaaaa', border: '1px solid #333333', WebkitTapHighlightColor: 'transparent' }}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Home Feed ─── */
 const POSTS_PER_PAGE = 25;
 
@@ -343,15 +409,13 @@ export default function Home() {
 
   if (user && count > 0) {
     return (
-      <div className="min-h-[100dvh] px-4 pt-4 pb-20" style={{ backgroundColor: '#000000', overflowX: 'hidden', touchAction: 'pan-y' }}>
+      <div className="min-h-[100dvh] px-4 pt-4 pb-20" style={{ backgroundColor: '#000000' }}>
         <div className="flex items-center justify-between mb-4">
           <h1 className="font-display text-lg tracking-wider" style={{ color: '#ffffff' }}>YOUR FEED</h1>
           <span className="font-body text-xs" style={{ color: '#666666' }}>{feedPosts.length} posts</span>
         </div>
         {feedPosts.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {feedPosts.map((post) => <FeedPostCard key={post.id} post={post} />)}
-          </div>
+          <FeedSwiper posts={feedPosts} />
         ) : (
           <div className="flex flex-col items-center justify-center py-20 rounded-lg" style={{ backgroundColor: '#111111', border: '1px dashed #222222' }}>
             <Users size={40} style={{ color: '#444444', marginBottom: 12 }} />
@@ -364,7 +428,7 @@ export default function Home() {
 
   if (user && count === 0) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000', overflowX: 'hidden', touchAction: 'pan-y' }}>
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000' }}>
         <Users size={56} style={{ color: '#333333', marginBottom: 20 }} />
         <h2 className="font-display text-xl tracking-wider mb-2" style={{ color: '#ffffff' }}>YOUR FEED IS EMPTY</h2>
         <p className="font-body text-sm text-center mb-8 max-w-[280px]" style={{ color: '#666666' }}>Join subcommittees to see posts from people who share your niche interest.</p>
@@ -376,7 +440,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000', overflowX: 'hidden', touchAction: 'pan-y' }}>
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 pb-20" style={{ backgroundColor: '#000000' }}>
       <h1 className="font-display text-3xl tracking-wider mb-3 text-center" style={{ color: '#ffffff' }}>HOBBYHUB</h1>
       <p className="font-body text-sm text-center mb-8 max-w-[280px]" style={{ color: '#666666' }}>The community for hobby enthusiasts. Find your niche, share your passion.</p>
       <div className="flex flex-col gap-3 w-full max-w-[260px]">
