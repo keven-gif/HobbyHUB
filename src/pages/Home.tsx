@@ -385,11 +385,31 @@ function FeedSwiper({ posts }: { posts: any[] }) {
 /* ─── Home Feed ─── */
 const POSTS_PER_PAGE = 25;
 
+/* The bottom nav is fixed/out-of-flow and only shows below the `sm`
+   breakpoint, so the reserved space for it must be conditional too —
+   percentage/flex heights don't reliably cascade through the nested
+   absolutely-positioned swiper layers on real mobile browsers, so this
+   computes an explicit height instead (same calc+env pattern already
+   used in Navbar/Layout). */
+function useFeedScreenHeight(): string {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    const handler = () => setIsDesktop(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return `calc(100dvh - 72px - env(safe-area-inset-top, 0px)${isDesktop ? '' : ' - 56px'})`
+}
+
 export default function Home() {
   const { user } = useAuth()
   const { posts } = usePosts()
   const { joined, count } = useJoinedSubcommittees(user?.id)
   const [subNamesToIds, setSubNamesToIds] = useState<Record<string, string>>({})
+  const feedScreenHeight = useFeedScreenHeight()
 
   /* Build mapping of subcommittee names → IDs for backward compat */
   useEffect(() => {
@@ -420,7 +440,7 @@ export default function Home() {
 
   if (user && count > 0) {
     return (
-      <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#000000' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: feedScreenHeight, backgroundColor: '#000000' }}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0">
           <h1 className="font-display text-lg tracking-wider" style={{ color: '#ffffff' }}>YOUR FEED</h1>
           <span className="font-body text-xs" style={{ color: '#666666' }}>{feedPosts.length} posts</span>
@@ -441,7 +461,7 @@ export default function Home() {
 
   if (user && count === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center px-6" style={{ backgroundColor: '#000000' }}>
+      <div className="flex flex-col items-center justify-center px-6" style={{ height: feedScreenHeight, backgroundColor: '#000000' }}>
         <Users size={56} style={{ color: '#333333', marginBottom: 20 }} />
         <h2 className="font-display text-xl tracking-wider mb-2" style={{ color: '#ffffff' }}>YOUR FEED IS EMPTY</h2>
         <p className="font-body text-sm text-center mb-8 max-w-[280px]" style={{ color: '#666666' }}>Join subcommittees to see posts from people who share your niche interest.</p>
@@ -453,7 +473,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-full flex flex-col items-center justify-center px-6" style={{ backgroundColor: '#000000' }}>
+    <div className="flex flex-col items-center justify-center px-6" style={{ height: feedScreenHeight, backgroundColor: '#000000' }}>
       <h1 className="font-display text-3xl tracking-wider mb-3 text-center" style={{ color: '#ffffff' }}>HOBBYHUB</h1>
       <p className="font-body text-sm text-center mb-8 max-w-[280px]" style={{ color: '#666666' }}>The community for hobby enthusiasts. Find your niche, share your passion.</p>
       <div className="flex flex-col gap-3 w-full max-w-[260px]">
