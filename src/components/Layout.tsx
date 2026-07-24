@@ -29,7 +29,9 @@ export default function Layout() {
       <main className="flex-1 pb-14 sm:pb-0" style={{ paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))' }}>
         <Outlet />
       </main>
-      <Footer />
+      <div className="hidden sm:block">
+        <Footer />
+      </div>
       <BottomNav />
     </div>
   );
