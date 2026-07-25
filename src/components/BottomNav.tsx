@@ -25,6 +25,7 @@ export default function BottomNav() {
 
   return (
     <nav
+      id="app-bottom-nav"
       className="fixed bottom-0 left-0 right-0 z-50 sm:hidden"
       style={{
         backgroundColor: 'rgba(15, 17, 21, 0.92)',
