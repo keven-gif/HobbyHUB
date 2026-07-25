@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, X, Heart, Users, Circle, UserPlus, UserCheck } from 'lucide-react'
+import { Search, X, Heart, UserPlus, UserCheck } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { usePosts } from '@/context/PostContext'
 import { useFriends } from '@/hooks/useFriends'
 import { useSubcommitteeMemberCounts } from '@/hooks/useSubcommitteeMemberCounts'
 import { useJoinedSubcommittees } from '@/hooks/useJoinedSubcommittees'
-import { getActiveUsers, formatLastSeen, type UserActivity } from '@/lib/activityTracker'
+import { getActiveUsers, type UserActivity } from '@/lib/activityTracker'
 import { getAllUsersAsync } from '@/lib/membershipRegistry'
 import { getAllCommunities, getCommunity, getSubcommittees } from '@/data/communityData'
 
@@ -325,39 +325,6 @@ export default function Explore() {
         </div>
       </div>
 
-      {/* ═══ ACTIVE NOW ═══ */}
-      <div className="px-4 pb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <h2 className="font-display text-sm tracking-wider" style={{ color: '#888' }}>ACTIVE NOW</h2>
-          <Circle size={8} fill="#39ff14" stroke="none" />
-          <span className="font-body text-[10px]" style={{ color: '#39ff14' }}>{activeUsers.length} online</span>
-        </div>
-        {activeUsers.length === 0 ? (
-          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: '#111', border: '1px solid #222' }}>
-            <Users size={16} style={{ color: '#555' }} />
-            <span className="font-body text-xs" style={{ color: '#555' }}>No users active right now</span>
-          </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-            {activeUsers.map((u) => (
-              <Link
-                key={u.userId}
-                to={`/profile?userId=${u.userId}`}
-                className="flex-shrink-0 flex flex-col items-center gap-1.5 p-2 rounded-lg min-w-[72px]"
-                style={{ backgroundColor: '#111', border: '1px solid #222' }}
-              >
-                <div className="relative">
-                  <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full object-cover" />
-                  <Circle size={8} fill="#39ff14" stroke="none" className="absolute bottom-0 right-0" />
-                </div>
-                <span className="font-body text-[10px] truncate max-w-[60px]" style={{ color: '#aaa' }}>{u.name}</span>
-                <span className="font-body text-[8px]" style={{ color: '#39ff14' }}>{formatLastSeen(u.lastSeen)}</span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* ═══ FIND USERS ═══ */}
       <div className="px-4 pb-4">
         <h2 className="font-display text-sm tracking-wider mb-3" style={{ color: '#888' }}>FIND USERS</h2>
@@ -523,7 +490,6 @@ export default function Explore() {
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className="font-body text-[10px]" style={{ color: '#555' }}>{c.members} members</span>
-                  <span className="font-body text-[10px]" style={{ color: c.color }}>{c.active} active</span>
                 </div>
               </div>
             </Link>
