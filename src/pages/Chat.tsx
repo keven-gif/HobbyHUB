@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Users, MoreVertical, LogOut } from 'lucide-react';
 import { useMessages } from '@/context/MessageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAppScreenHeight } from '@/hooks/useAppScreenHeight';
 import Avatar from '@/components/Avatar';
 import { toast } from 'sonner';
 
@@ -65,6 +66,7 @@ export default function Chat() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { ref: screenRef, style: screenHeight } = useAppScreenHeight();
 
   const conversation = useMemo(() => (id ? getConversation(id) : undefined), [id, getConversation]);
   const messages = useMemo(() => (id ? getMessagesForConversation(id) : []), [id, getMessagesForConversation]);
@@ -112,7 +114,7 @@ export default function Chat() {
   /* Loading state — conversation may still be loading from Supabase */
   if (!conversation && !hasLoaded) {
     return (
-      <div className="h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#000000' }}>
+      <div ref={screenRef} className="flex flex-col items-center justify-center" style={{ height: screenHeight, backgroundColor: '#000000' }}>
         <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#d93a3a', borderTopColor: 'transparent' }} />
         <p className="font-body text-xs mt-3" style={{ color: '#555555' }}>Loading conversation...</p>
       </div>
@@ -122,7 +124,7 @@ export default function Chat() {
   /* Truly not found after loading period */
   if (!conversation) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#000000' }}>
+      <div ref={screenRef} className="flex flex-col items-center justify-center" style={{ height: screenHeight, backgroundColor: '#000000' }}>
         <p className="font-body text-sm" style={{ color: '#555555' }}>Conversation not found</p>
         <button onClick={() => navigate('/messages')} className="mt-4 font-body text-xs px-4 py-2 rounded-lg" style={{ backgroundColor: '#d93a3a', color: '#fff' }}>
           Back to Messages
@@ -132,7 +134,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col" style={{ backgroundColor: '#000000' }}>
+    <div ref={screenRef} className="flex flex-col overflow-hidden" style={{ height: screenHeight, backgroundColor: '#000000' }}>
       {/* Chat Header */}
       <div
         className="flex items-center gap-3 px-4 h-14 flex-shrink-0"
