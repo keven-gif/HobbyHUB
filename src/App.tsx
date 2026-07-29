@@ -85,6 +85,20 @@ function App() {
                     <Route path="/reset-password" element={<Suspense fallback={<InlineLoader />}><ResetPassword /></Suspense>} />
                     <Route path="/admin" element={<AdminRoute><Suspense fallback={<InlineLoader />}><Admin /></Suspense></AdminRoute>} />
 
+                    {/* Public legal/support pages -- must be reachable without signing in
+                        (App Store review requires an accessible privacy policy, and these
+                        shouldn't force a login wall regardless). Same Layout chrome as the
+                        signed-in app, just not gated by ProtectedRoute. */}
+                    <Route path="/privacy" element={<Layout />}>
+                      <Route index element={<Suspense fallback={<InlineLoader />}><PrivacyPolicy /></Suspense>} />
+                    </Route>
+                    <Route path="/terms" element={<Layout />}>
+                      <Route index element={<Suspense fallback={<InlineLoader />}><TermsOfService /></Suspense>} />
+                    </Route>
+                    <Route path="/support" element={<Layout />}>
+                      <Route index element={<Suspense fallback={<InlineLoader />}><Support /></Suspense>} />
+                    </Route>
+
                     {/* Protected Application Routes Layout */}
                     <Route
                       path="/"
@@ -109,9 +123,6 @@ function App() {
                       <Route path="messages" element={<Suspense fallback={<InlineLoader />}><Messages /></Suspense>} />
                       <Route path="chat/:id" element={<Suspense fallback={<InlineLoader />}><Chat /></Suspense>} />
                       <Route path="profile" element={<Suspense fallback={<InlineLoader />}><Profile /></Suspense>} />
-                      <Route path="privacy" element={<Suspense fallback={<InlineLoader />}><PrivacyPolicy /></Suspense>} />
-                      <Route path="terms" element={<Suspense fallback={<InlineLoader />}><TermsOfService /></Suspense>} />
-                      <Route path="support" element={<Suspense fallback={<InlineLoader />}><Support /></Suspense>} />
                       <Route path="updates" element={<Suspense fallback={<InlineLoader />}><Updates /></Suspense>} />
                       <Route path="privacy-data" element={<Suspense fallback={<InlineLoader />}><DataPrivacy /></Suspense>} />
                     </Route>

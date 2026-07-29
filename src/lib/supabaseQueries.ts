@@ -586,3 +586,15 @@ export async function deleteAllUserContent(userId: string) {
     supabase!.from('projects').delete().eq('author_id', userId),
   ]);
 }
+
+/** Permanently deletes the signed-in user's account -- profile, content,
+ * and their ability to log in at all. Runs server-side via the
+ * `delete-account` Edge Function since removing an auth user requires the
+ * service-role key, which the client never has. Signs the caller out as a
+ * side effect (their session is invalidated the moment the account goes
+ * away), so callers should navigate away immediately after this resolves. */
+export async function deleteMyAccount() {
+  const { data, error } = await supabase!.functions.invoke('delete-account');
+  if (error) throw error;
+  return data;
+}

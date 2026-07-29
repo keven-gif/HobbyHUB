@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { exportUserData, deleteAllUserContent } from '@/lib/supabaseQueries';
+import { exportUserData, deleteAllUserContent, deleteMyAccount } from '@/lib/supabaseQueries';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Trash2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ export default function DataPrivacy() {
   const { user, logout } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleExport = async () => {
     if (!user) return;
@@ -46,6 +47,22 @@ export default function DataPrivacy() {
       toast.error(err?.message || 'Failed to delete your content');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (!window.confirm('Permanently delete your account? This removes your profile, posts, guides, questions, projects, and your ability to sign in. This cannot be undone.')) return;
+    if (!window.confirm('This is your final confirmation -- your account cannot be recovered after this. Continue?')) return;
+    setIsDeletingAccount(true);
+    try {
+      await deleteMyAccount();
+      toast.success('Your account has been deleted');
+      await logout();
+      navigate('/login');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete your account');
+      setIsDeletingAccount(false);
     }
   };
 
@@ -90,15 +107,14 @@ export default function DataPrivacy() {
           </Button>
         </div>
 
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
-          <h2 className="font-body text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Delete your account</h2>
-          <p className="font-body text-xs" style={{ color: 'var(--text-muted)' }}>
-            Full account deletion requires manual action from an admin. Delete your content above first, then{' '}
-            <button onClick={() => { navigate('/support'); }} className="underline" style={{ color: 'var(--accent-primary)' }}>
-              contact support
-            </button>{' '}
-            to close your account.
+        <div className="p-4 rounded-lg" style={{ backgroundColor: '#ef444410', border: '1px solid #ef444440' }}>
+          <h2 className="font-body text-sm font-semibold mb-1" style={{ color: '#ef4444' }}>Delete your account</h2>
+          <p className="font-body text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+            Permanently deletes your profile, posts, guides, questions, projects, and your ability to sign in. There's no undo.
           </p>
+          <Button onClick={handleDeleteAccount} disabled={isDeletingAccount} variant="destructive" className="w-full sm:w-auto">
+            <Trash2 size={14} className="mr-1.5" /> {isDeletingAccount ? 'Deleting account...' : 'Delete my account'}
+          </Button>
         </div>
       </div>
 

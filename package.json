@@ -8,12 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "cap:sync": "cap sync android"
+    "cap:sync": "cap sync"
   },
   "dependencies": {
     "@capacitor/android": "7.6.7",
     "@capacitor/app": "7.1.1",
     "@capacitor/core": "7.6.7",
+    "@capacitor/ios": "7.6.7",
     "@capacitor/keyboard": "7.0.5",
     "@capacitor/splash-screen": "7.0.5",
     "@capacitor/status-bar": "7.0.6",
